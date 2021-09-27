@@ -29,14 +29,15 @@ class FlowController extends EventHandler {
      EventHandler.prototype.destroy.call(this);
   }  
 
-  onMediaAttached(data) {      
+  onMediaAttached(data) {
     if (data.websocketName != undefined){
-      var client = new WebSocket( 'ws://' + window.location.host + '/' +  data.websocketName );
+      // var client = new WebSocket( 'ws://' + window.location.host + '/' +  data.websocketName );
+      // 'ws://**********:8080/dataforward/websocketforward?id='
+      var client = new WebSocket( data.websocketUrl + data.copterId);
       this.wfs.attachWebsocket(client,data.channelName);
     }else{
        console.log('websocketName ERROE!!!');
     }
-
   }
   
   onBufferCreated(data) {

@@ -438,7 +438,7 @@ var BufferController = function (_EventHandler) {
         this.checkPendingTracks();
       }
 
-      this.wfs.trigger(_events2.default.MEDIA_ATTACHED, { media: this.media, channelName: this.channelName, mediaType: this.mediaType, websocketName: this.websocketName });
+      this.wfs.trigger(_events2.default.MEDIA_ATTACHED, { websocketUrl: this.wfs.websocketUrl, copterId: this.wfs.copterId, media: this.media, channelName: this.channelName, mediaType: this.mediaType, websocketName: this.websocketName });
     }
   }, {
     key: 'checkPendingTracks',
@@ -468,7 +468,7 @@ var BufferController = function (_EventHandler) {
       try {
         var sb = sourceBuffer['video'] = mediaSource.addSourceBuffer(mimeType);
         sb.addEventListener('updateend', this.onsbue);
-        track.buffer = sb;
+        tracks.buffer = sb;
       } catch (err) {}
       this.wfs.trigger(_events2.default.BUFFER_CREATED, { tracks: tracks });
       this.media.play();
@@ -588,7 +588,9 @@ var FlowController = function (_EventHandler) {
     key: 'onMediaAttached',
     value: function onMediaAttached(data) {
       if (data.websocketName != undefined) {
-        var client = new WebSocket('ws://' + window.location.host + '/' + data.websocketName);
+        // var client = new WebSocket( 'ws://' + window.location.host + '/' +  data.websocketName );
+        // 'ws://**********:8080/dataforward/websocketforward?id='
+        var client = new WebSocket(data.websocketUrl + data.copterId);
         this.wfs.attachWebsocket(client, data.channelName);
       } else {
         console.log('websocketName ERROE!!!');
@@ -1681,6 +1683,7 @@ var WebsocketLoader = function (_EventHandler) {
   }, {
     key: 'receiveSocketMessage',
     value: function receiveSocketMessage(event) {
+      if (document['hidden']) return;
       this.buf = new Uint8Array(event.data);
       var copy = new Uint8Array(this.buf);
 
@@ -3643,14 +3646,17 @@ var Wfs = function () {
     }
   }, {
     key: 'attachMedia',
-    value: function attachMedia(media) {
-      var channelName = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'chX';
-      var mediaType = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'H264Raw';
-      var websocketName = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'play2';
+    value: function attachMedia(media, websocketUrl, copterId) {
+      var channelName = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 'chX';
+      var mediaType = arguments.length > 4 && arguments[4] !== undefined ? arguments[4] : 'H264Raw';
+      var websocketName = arguments.length > 5 && arguments[5] !== undefined ? arguments[5] : 'play2';
       // 'H264Raw' 'FMp4'    
       this.mediaType = mediaType;
       this.media = media;
-      this.trigger(_events2.default.MEDIA_ATTACHING, { media: media, channelName: channelName, mediaType: mediaType, websocketName: websocketName });
+      this.websocketUrl = websocketUrl;
+      this.copterId = copterId;
+
+      this.trigger(_events2.default.MEDIA_ATTACHING, { media: media, channelName: copterId, mediaType: mediaType, websocketName: websocketName });
     }
   }, {
     key: 'attachWebsocket',

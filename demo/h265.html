@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <div>
+    <video id="videoDom" src=""></video>
+  </div>
+  <script>
+    var videoDom = document.getElementById("videoDom")
+    var supportHEVC = function(video) {  
+        if (typeof video.canPlayType == 'function') {
+            var playable = video.canPlayType('video/mp4; codecs="hevc"');
+            if ((playable.toLowerCase() == 'maybe') || (playable.toLowerCase() == 'probably')) {
+                return true;
+            }
+        }
+        return false;
+    };
+    console.log(supportHEVC(videoDom))
+  </script>
+</body>
+</html>

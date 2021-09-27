@@ -109,7 +109,7 @@ class BufferController extends EventHandler {
       this.checkPendingTracks();
     }
 
-    this.wfs.trigger(Event.MEDIA_ATTACHED, {media:this.media, channelName:this.channelName, mediaType: this.mediaType, websocketName:this.websocketName});
+    this.wfs.trigger(Event.MEDIA_ATTACHED, {websocketUrl:this.wfs.websocketUrl, copterId: this.wfs.copterId, media:this.media, channelName:this.channelName, mediaType: this.mediaType, websocketName:this.websocketName});
   }
 
   checkPendingTracks() {  

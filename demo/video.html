@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+    }
+    .video-wrap {
+      width: 600px;
+      height: 500px;
+      margin: 0 auto;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="warp" class="video-wrap">
+  </div>
+  <script>
+    var wrap = document.getElementById('warp')
+    var v = document.createElement("video");
+    // wrap.insertAdjacentHTML("beforebegin", v);
+    v.src = "http://nickdesaulniers.github.io/netfix/demo/frag_bunny.mp4"
+    wrap.appendChild(v)
+  </script>
+</body>
+</html>

@@ -44,7 +44,8 @@ class Wfs {
         fragLoadingMaxRetryTimeout: 64000,
         fragLoadingLoopThreshold: 3,
         forceKeyFrameOnDiscontinuity: true,
-        appendErrorMaxRetry: 3
+        appendErrorMaxRetry: 3,
+        videoError: () => {}
       };
     }
     return Wfs.defaultConfig;
@@ -94,12 +95,43 @@ class Wfs {
     this.media = media;
     this.websocketUrl = websocketUrl;
     this.copterId = copterId;
+    this.websocketName = websocketName;
 
     this.trigger(Event.MEDIA_ATTACHING, {media:media, channelName:copterId, mediaType:mediaType, websocketName:websocketName });
   }
   
   attachWebsocket(websocket,channelName) { 
     this.trigger(Event.WEBSOCKET_ATTACHING, {websocket: websocket, mediaType:this.mediaType, channelName:channelName });
+  }
+
+
+
+  // 创建新的链接获取数据
+  updateCreateNewWebsocket() {
+
+    this.trigger(Event.MEDIA_ATTACHING, {media:this.media, channelName:this.copterId, mediaType:this.mediaType, websocketName:this.websocketName });
+
+    // 触发websocket重新链接
+    // WEBSOCKET_RECONNECTION
+    // 可以考虑BUFFER_RESET下
+    // console.log("直接断开链接,重新链接")
+    // this.websocketLoader.client.close();
+    // this.trigger(Event.MEDIA_ATTACHED, {websocketUrl:this.websocketUrl, copterId: this.copterId, media:this.media, channelName:this.copterId, mediaType: this.mediaType, websocketName:this.websocketName});
+    // this.trigger(Event.WEBSOCKET_RECONNECTION);
+
+    // 这里是直接时间间隔刷新
+    // this.destroy()
+    // let wfsVideo = new Wfs({ debug: true })
+    // wfsVideo.attachMedia(this.media, this.websocketUrl, this.copterId)
+    // return wfsVideo
+    
+    // this.destroy();
+    // setTimeout(()=>{
+    //   this.flowController = new FlowController(this);
+    //   this.bufferController = new BufferController(this);
+    //   this.websocketLoader = new WebsocketLoader(this);
+    //   this.trigger(Event.MEDIA_ATTACHING, {media:this.media, channelName:this.copterId, mediaType:this.mediaType, websocketName:this.websocketName });
+    // })
   }
 }
 

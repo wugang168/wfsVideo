@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <script>
+    //二进制转为字符串
+    function binaryToStr(str){
+      var result = [];
+      //通过空格来分开二进制的字符
+      var list = str.split(" ");
+      for(var i=0;i<list.length;i++){
+         var item = list[i];
+         //转为asciicode 码
+         var asciiCode = parseInt(item,2);
+         //转为文字
+         var charValue = String.fromCharCode(asciiCode);
+         //添加到集合中
+         result.push(charValue);
+      }
+      //返回结果
+      return result.join("");
+    }
+    // var phoneBuffer = new ArrayBuffer(8)
+    // var p = new Uint8Array(phoneBuffer)
+    // console.log(phoneBuffer)
+    // console.log(p)
+    var time = new Uint8Array([237, 238, 82, 97, 154, 43, 14, 0, 0, 0, 0, 1, 9])
+    console.log(time)
+
+    var times = time.subarray(0, 8)
+
+
+
+    if(time[8] == 0 && time[9] == 0 && time[10] == 0 && time[11] == 1 && time[12] == 9) {
+      console.log("可以这样判断了")
+    }
+
+    // console.log(times)
+    let view = new DataView(times.buffer, 0, 4);
+    console.log(view.getUint32(0, 32))
+
+    console.log("时间戳")
+
+    console.log(parseInt((new Date().getTime())/1000))
+  </script>
+</body>
+</html>

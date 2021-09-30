@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+
+  <script>
+
+    //将字符串转化为二进制的数据
+    function strToBinary(str){
+      var result = [];
+      var list = str.split("");
+      for(var i=0;i<list.length;i++){
+        if(i != 0){
+          //加空格，分割二进制
+          result.push("");
+        }
+        var item = list[i];
+        //将字符串转化为二进制数据
+        var binaryStr = item.charCodeAt().toString(2);
+        result.push(binaryStr);
+      }  
+      return result.join("");
+    }
+     
+    //二进制转为字符串
+    function binaryToStr(str){
+      var result = [];
+      //通过空格来分开二进制的字符
+      var list = str.split(" ");
+      for(var i=0;i<list.length;i++){
+         var item = list[i];
+         //转为asciicode 码
+         var asciiCode = parseInt(item,2);
+         //转为文字
+         var charValue = String.fromCharCode(asciiCode);
+         //添加到集合中
+         result.push(charValue);
+      }
+      //返回结果
+      return result.join("");
+    }
+
+
+    // 将数字转换为二进制数据
+    // var nowTime = 1632796344;
+    // var blob = new Blob([nowTime.toString(2)]);
+
+    console.log("查看")
+    console.log(strToBinary('1632796344'))
+    
+    // 把一个时间戳转换为二进制数
+    // var nowTime = 1632796344;
+    // var blob = new Blob([nowTime.toString(2)]);
+    // console.log(blob)
+    // var buffer = blob.arrayBuffer()
+    // buffer.then((res) => {
+    //   // res 是一个arrayBuffer
+    //   console.log("看看结果")
+    //   console.log(res) 
+    //   var getTime = new Uint8Array(res)
+    //   console.log(getTime)
+    //   // let view = new DataView(res);
+    //   // console.log(view.getUint32(0))
+    // })
+    // console.log(buffer)
+
+
+    var debug = {hello: "world"};
+    console.log("打印下：" + strToBinary(JSON.stringify(debug, null, 2)))
+
+
+    var blob = new Blob([JSON.stringify(debug, null, 2)], {type : 'application/json'});
+    var buffer = blob.arrayBuffer()
+    buffer.then((res)=>{
+      console.log(res)
+      var getTime = new Uint16Array(res)
+      var len = getTime.byteLength;
+      console.log(getTime) 
+      console.log(getTime.byteLength)
+      console.log(getTime)
+      var bStr = '';
+      for(let i=0; i<len;  i++) {
+        bStr += getTime[i].toString(2)
+        bStr += ' '
+      }
+      console.log("看看接出来的二进制列表：" + bStr)
+      console.log("反解析出来的文本是多少：" + binaryToStr(bStr))
+    })
+
+    var a = 123
+    console.log("123的二进制：" + a.toString(2))
+
+
+    // 时间过期的判断
+    // 接受到数据 取前面8个字节 判断是否带有时间戳 
+    if(!firstTime) {
+      firstTime = '1111'
+      localTime = new Date().getTime();
+    }else{
+      currentTime = '';
+      currentlocalTime = new Date().getTime();
+
+      // 计算时间差值
+      playTime = currentTime - firstTime
+      localPast =  currentlocalTime - localTime
+
+      if(localPast - playTime > 5) {
+        // 直接就触发重新拉取一个新的流来替换掉
+      }
+    }
+  </script>
+</body>
+</html>

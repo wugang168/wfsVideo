@@ -335,34 +335,36 @@ var BufferController = function (_EventHandler) {
   function BufferController(wfs) {
     _classCallCheck(this, BufferController);
 
-    var _this = _possibleConstructorReturn(this, (BufferController.__proto__ || Object.getPrototypeOf(BufferController)).call(this, wfs, _events2.default.MEDIA_ATTACHING, _events2.default.BUFFER_APPENDING, _events2.default.BUFFER_RESET));
+    var _this2 = _possibleConstructorReturn(this, (BufferController.__proto__ || Object.getPrototypeOf(BufferController)).call(this, wfs, _events2.default.MEDIA_ATTACHING, _events2.default.BUFFER_APPENDING, _events2.default.BUFFER_RESET));
 
-    _this.mediaSource = null;
-    _this.media = null;
-    _this.pendingTracks = {};
-    _this.sourceBuffer = {};
-    _this.segments = [];
+    _this2.mediaSource = null;
+    _this2.media = null;
+    _this2.pendingTracks = {};
+    _this2.sourceBuffer = {};
+    _this2.segments = [];
 
-    _this.appended = 0;
-    _this._msDuration = null;
+    _this2.appended = 0;
+    _this2._msDuration = null;
 
     // Source Buffer listeners
-    _this.onsbue = _this.onSBUpdateEnd.bind(_this);
+    _this2.onsbue = _this2.onSBUpdateEnd.bind(_this2);
 
-    _this.browserType = 0;
+    _this2.browserType = 0;
     if (navigator.userAgent.toLowerCase().indexOf('firefox') !== -1) {
-      _this.browserType = 1;
+      _this2.browserType = 1;
     }
-    _this.mediaType = 'H264Raw';
+    _this2.mediaType = 'H264Raw';
 
-    _this.websocketName = undefined;
-    _this.channelName = undefined;
-    return _this;
+    _this2.websocketName = undefined;
+    _this2.channelName = undefined;
+    return _this2;
   }
 
   _createClass(BufferController, [{
     key: 'destroy',
     value: function destroy() {
+      this.media = null;
+      this.mediaSource = null;
       _eventHandler2.default.prototype.destroy.call(this);
     }
   }, {
@@ -372,6 +374,8 @@ var BufferController = function (_EventHandler) {
       this.mediaType = data.mediaType;
       this.websocketName = data.websocketName;
       this.channelName = data.channelName;
+      var _this = this;
+      var wfs = this.wfs;
       if (media) {
         // setup the media source
         var ms = this.mediaSource = new MediaSource();
@@ -379,16 +383,36 @@ var BufferController = function (_EventHandler) {
         this.onmso = this.onMediaSourceOpen.bind(this);
         this.onmse = this.onMediaSourceEnded.bind(this);
         this.onmsc = this.onMediaSourceClose.bind(this);
+
+        this.onVideoError = this.onVideoError.bind(this);
+
         ms.addEventListener('sourceopen', this.onmso);
         ms.addEventListener('sourceended', this.onmse);
         ms.addEventListener('sourceclose', this.onmsc);
         // link video and media Source
         media.src = URL.createObjectURL(ms);
+
+        // media.addEventListener('error', function(err) {
+        //   console.log("监听到了video错误,", media.error.code)
+        //   // 直接调用绑定的videoError
+        //   _this.wfs.config.videoError(err)
+        // })
+        media.addEventListener('error', this.onVideoError);
       }
+    }
+  }, {
+    key: 'onVideoError',
+    value: function onVideoError(err) {
+      console.log("监听到了video错误,", this.media.error.code);
+      this.media.removeEventListener('error', this.onVideoError);
+      this.wfs.config.videoError(err);
     }
   }, {
     key: 'onMediaDetaching',
     value: function onMediaDetaching() {}
+
+    // 当有缓冲数据加载后
+
   }, {
     key: 'onBufferAppending',
     value: function onBufferAppending(data) {
@@ -397,6 +421,7 @@ var BufferController = function (_EventHandler) {
       } else {
         this.segments.push(data);
       }
+      // 暂时注销下
       this.doAppending();
     }
   }, {
@@ -418,9 +443,10 @@ var BufferController = function (_EventHandler) {
         this.media.play();
       }
 
+      //console.log("medisSource UpDataEnd----2")
       this.appending = false;
       this.doAppending();
-      this.updateMediaElementDuration();
+      // this.updateMediaElementDuration();
     }
   }, {
     key: 'updateMediaElementDuration',
@@ -437,7 +463,7 @@ var BufferController = function (_EventHandler) {
       if (this.mediaType === 'FMp4') {
         this.checkPendingTracks();
       }
-
+      // 这里是去创建websocket链接
       this.wfs.trigger(_events2.default.MEDIA_ATTACHED, { websocketUrl: this.wfs.websocketUrl, copterId: this.wfs.copterId, media: this.media, channelName: this.channelName, mediaType: this.mediaType, websocketName: this.websocketName });
     }
   }, {
@@ -453,11 +479,14 @@ var BufferController = function (_EventHandler) {
         this.createSourceBuffers({ tracks: 'video', mimeType: data.mimeType });
       }
     }
+
+    // 这个函数只运行一次
+
   }, {
     key: 'createSourceBuffers',
     value: function createSourceBuffers(tracks) {
-      var sourceBuffer = this.sourceBuffer,
-          mediaSource = this.mediaSource;
+      var sourceBuffer = this.sourceBuffer;
+      var mediaSource = this.mediaSource;
       var mimeType = void 0;
       if (tracks.mimeType === '') {
         mimeType = 'video/mp4;codecs=avc1.420028'; // avc1.42c01f avc1.42801e avc1.640028 avc1.420028
@@ -468,41 +497,97 @@ var BufferController = function (_EventHandler) {
       try {
         var sb = sourceBuffer['video'] = mediaSource.addSourceBuffer(mimeType);
         sb.addEventListener('updateend', this.onsbue);
+
+        //console.log('看看mimieType',tracks.mimeType)
+        //console.log("updateend------这里到了")
         tracks.buffer = sb;
-      } catch (err) {}
+      } catch (err) {
+        console.log("这里是看mediaSource", err);
+      }
+
+      // 触发创建MediaSource的缓冲流
       this.wfs.trigger(_events2.default.BUFFER_CREATED, { tracks: tracks });
+
       this.media.play();
+      // setTimeout(()=>{
+      //   this.media.play()
+      // })  
+    }
+  }, {
+    key: 'createSourceBuffersTwo',
+    value: function createSourceBuffersTwo(tracks) {
+
+      var mimeType = void 0;
+      if (tracks.mimeType === '') {
+        mimeType = 'video/mp4;codecs=avc1.420028'; // avc1.42c01f avc1.42801e avc1.640028 avc1.420028
+      } else {
+        mimeType = 'video/mp4;codecs=' + tracks.mimeType;
+      }
+
+      try {
+        this.sourceBuffer['video'] = this.mediaSource.addSourceBuffer(mimeType);
+        this.sourceBuffer['video'].addEventListener('updateend', this.onsbue);
+        //console.log("updateend------这里到了")
+        tracks.buffer = this.sourceBuffer['video'];
+      } catch (err) {
+        console.log("这里是看mediaSource", err);
+      }
+
+      // 触发创建MediaSource的缓冲流
+      this.wfs.trigger(_events2.default.BUFFER_CREATED, { tracks: tracks });
+
+      this.media.play();
+      // setTimeout(()=>{
+      //   this.media.play()
+      // })  
     }
   }, {
     key: 'doAppending',
     value: function doAppending() {
 
-      var wfs = this.wfs,
-          sourceBuffer = this.sourceBuffer,
-          segments = this.segments;
+      //console.log("反正这里是都要来的吧")
+
+      var wfs = this.wfs;
+      var sourceBuffer = this.sourceBuffer;
+      var segments = this.segments;
+
+      // 先检查缓冲区
       if (Object.keys(sourceBuffer).length) {
+
+        // 查看缓冲状态
+        //console.log(sourceBuffer)
+        //console.log('缓冲区的状态 -----',this.mediaSource.readyState)
 
         if (this.media.error) {
           this.segments = [];
+          // 如果这里报错了,说明上一次收到数据解析的时候出了问题
           console.log('trying to append although a media error occured, flush segment and abort');
           return;
         }
+
         if (this.appending) {
           return;
         }
 
         if (segments && segments.length) {
+          // 从数组的头部取出一个片段数据
           var segment = segments.shift();
           try {
             if (sourceBuffer[segment.type]) {
               this.parent = segment.parent;
+
+              // 这里才是关键点,给mediaSouce 喂缓冲数据
               sourceBuffer[segment.type].appendBuffer(segment.data);
               this.appendError = 0;
               this.appended++;
               this.appending = true;
-            } else {}
+            } else {
+              //console.log('--------------------------------------------')
+            }
           } catch (err) {
+            //console.log("doAppending------------------", err.code)
             // in case any error occured while appending, put back segment in segments table 
+            // 如果处理有错误,把取出的数据再压回头部
             segments.unshift(segment);
             var event = { type: ErrorTypes.MEDIA_ERROR };
             if (err.code !== 22) {
@@ -1539,6 +1624,8 @@ module.exports = {
   WEBSOCKET_DATA_UPLOADING: 'wfsWebsocketDataUploading',
 
   WEBSOCKET_MESSAGE_SENDING: 'wfsWebsocketMessageSending',
+
+  WEBSOCKET_RECONNECTION: 'wfsWebsocketReconnection',
   //------------------------------------------
   FILE_HEAD_LOADING: 'wfsFileHeadLoading',
 
@@ -1643,12 +1730,16 @@ var WebsocketLoader = function (_EventHandler) {
   function WebsocketLoader(wfs) {
     _classCallCheck(this, WebsocketLoader);
 
-    var _this = _possibleConstructorReturn(this, (WebsocketLoader.__proto__ || Object.getPrototypeOf(WebsocketLoader)).call(this, wfs, _events2.default.WEBSOCKET_ATTACHING, _events2.default.WEBSOCKET_DATA_UPLOADING, _events2.default.WEBSOCKET_MESSAGE_SENDING));
+    var _this = _possibleConstructorReturn(this, (WebsocketLoader.__proto__ || Object.getPrototypeOf(WebsocketLoader)).call(this, wfs, _events2.default.WEBSOCKET_ATTACHING, _events2.default.WEBSOCKET_DATA_UPLOADING, _events2.default.WEBSOCKET_MESSAGE_SENDING, _events2.default.WEBSOCKET_RECONNECTION));
 
     _this.buf = null;
     _this.slicesReader = new _h264NalSlicesreader2.default(wfs);
     _this.mediaType = undefined;
     _this.channelName = undefined;
+    _this.firstTimeStamp = null;
+    _this.firstLocalTimeStamp = null;
+    // 重连标志
+    _this.reconnectionFlag = false;
     return _this;
   }
 
@@ -1656,18 +1747,27 @@ var WebsocketLoader = function (_EventHandler) {
     key: 'destroy',
     value: function destroy() {
       !!this.client && this.client.close();
+      // console.log("这里没有断开链接吗？")
+      this.firstTimeStamp = null;
+      this.firstLocalTimeStamp = null;
+      this.buf = null;
       this.slicesReader.destroy();
       _eventHandler2.default.prototype.destroy.call(this);
     }
   }, {
     key: 'onWebsocketAttaching',
     value: function onWebsocketAttaching(data) {
+      var _this2 = this;
+
       this.mediaType = data.mediaType;
       this.channelName = data.channelName;
       if (data.websocket instanceof WebSocket) {
         this.client = data.websocket;
         this.client.onopen = this.initSocketClient.bind(this);
         this.client.onclose = function (e) {
+          _this2.firstTimeStamp = null;
+          _this2.firstLocalTimeStamp = null;
+          _this2.reconnectionFlag = false;
           console.log('Websocket Disconnected!');
         };
       }
@@ -1680,12 +1780,56 @@ var WebsocketLoader = function (_EventHandler) {
       this.wfs.trigger(_events2.default.WEBSOCKET_MESSAGE_SENDING, { commandType: "open", channelName: this.channelName, commandValue: "NA" });
       console.log('Websocket Open!');
     }
+
+    // 解析时间戳函数
+
+  }, {
+    key: 'paringTimeStamp',
+    value: function paringTimeStamp(subUint8Array) {
+
+      // 如果进入重连状态,就不需要再解析数据了,不然会触发创建多个webscoket链接
+      if (this.reconnectionFlag) {
+        return;
+      }
+
+      // 是否满足解析标志位
+      if (subUint8Array[8] == 0 && subUint8Array[9] == 0 && subUint8Array[10] == 0 && subUint8Array[11] == 1) {
+        // 解析时间戳
+        var times = subUint8Array.subarray(0, 8);
+        var view = new DataView(times.buffer, 0, 4);
+        var currentTime = view.getUint32(0, 32);
+        var currentlocalTime = parseInt(new Date().getTime() / 1000);
+
+        // console.log("打印一下解析到的时间戳：" + this.firstTimeStamp + " | " + currentTime)
+        // console.log("打印一下当前的时间戳：" + this.firstLocalTimeStamp + " | " + currentlocalTime)
+        if (!this.firstTimeStamp) {
+          this.firstTimeStamp = currentTime;
+          this.firstLocalTimeStamp = currentlocalTime;
+        } else {
+          var diffPlayTime = currentTime - this.firstTimeStamp;
+          var diffLocal = currentlocalTime - this.firstLocalTimeStamp;
+          //console.log("时间的差值：", Math.abs(diffLocal - diffPlayTime) )
+          if (Math.abs(diffLocal - diffPlayTime) >= 2) {
+            console.log("需要触发重新拉取图像了记录时间：" + currentlocalTime + this.wfs.copterId);
+            //console.log("时间的差值：", Math.abs(diffLocal - diffPlayTime) )
+            // 断开websocket链接
+            // 暂时不重连
+            this.reconnectionFlag = true;
+            this.client.close();
+            this.wfs.trigger(_events2.default.WEBSOCKET_RECONNECTION);
+          }
+        }
+      }
+    }
   }, {
     key: 'receiveSocketMessage',
     value: function receiveSocketMessage(event) {
       if (document['hidden']) return;
       this.buf = new Uint8Array(event.data);
       var copy = new Uint8Array(this.buf);
+      // 在这里接触时间戳出来
+      var subArray = this.buf.subarray(0, 13);
+      this.paringTimeStamp(subArray);
 
       if (this.mediaType === 'FMp4') {
         this.wfs.trigger(_events2.default.WEBSOCKET_ATTACHED, { payload: copy });
@@ -1693,6 +1837,7 @@ var WebsocketLoader = function (_EventHandler) {
       if (this.mediaType === 'H264Raw') {
         this.wfs.trigger(_events2.default.H264_DATA_PARSING, { data: copy });
       }
+      // this.reconnectionFlag = false   
     }
   }, {
     key: 'onWebsocketDataUploading',
@@ -1703,6 +1848,16 @@ var WebsocketLoader = function (_EventHandler) {
     key: 'onWebsocketMessageSending',
     value: function onWebsocketMessageSending(event) {
       this.client.send(JSON.stringify({ t: event.commandType, c: event.channelName, v: event.commandValue }));
+    }
+
+    // 重新建立链接
+
+  }, {
+    key: 'onWebsocketReconnection',
+    value: function onWebsocketReconnection() {
+      this.firstTimeStamp = null;
+      this.firstLocalTimeStamp = null;
+      this.wfs.trigger(_events2.default.MEDIA_ATTACHED, { websocketUrl: this.wfs.websocketUrl, copterId: this.wfs.copterId, media: this.wfs.media, channelName: this.wfs.copterId, mediaType: this.wfs.mediaType, websocketName: this.wfs.websocketName });
     }
   }]);
 
@@ -3585,7 +3740,8 @@ var Wfs = function () {
           fragLoadingMaxRetryTimeout: 64000,
           fragLoadingLoopThreshold: 3,
           forceKeyFrameOnDiscontinuity: true,
-          appendErrorMaxRetry: 3
+          appendErrorMaxRetry: 3,
+          videoError: function videoError() {}
         };
       }
       return Wfs.defaultConfig;
@@ -3655,6 +3811,7 @@ var Wfs = function () {
       this.media = media;
       this.websocketUrl = websocketUrl;
       this.copterId = copterId;
+      this.websocketName = websocketName;
 
       this.trigger(_events2.default.MEDIA_ATTACHING, { media: media, channelName: copterId, mediaType: mediaType, websocketName: websocketName });
     }
@@ -3662,6 +3819,37 @@ var Wfs = function () {
     key: 'attachWebsocket',
     value: function attachWebsocket(websocket, channelName) {
       this.trigger(_events2.default.WEBSOCKET_ATTACHING, { websocket: websocket, mediaType: this.mediaType, channelName: channelName });
+    }
+
+    // 创建新的链接获取数据
+
+  }, {
+    key: 'updateCreateNewWebsocket',
+    value: function updateCreateNewWebsocket() {
+
+      this.trigger(_events2.default.MEDIA_ATTACHING, { media: this.media, channelName: this.copterId, mediaType: this.mediaType, websocketName: this.websocketName });
+
+      // 触发websocket重新链接
+      // WEBSOCKET_RECONNECTION
+      // 可以考虑BUFFER_RESET下
+      // console.log("直接断开链接,重新链接")
+      // this.websocketLoader.client.close();
+      // this.trigger(Event.MEDIA_ATTACHED, {websocketUrl:this.websocketUrl, copterId: this.copterId, media:this.media, channelName:this.copterId, mediaType: this.mediaType, websocketName:this.websocketName});
+      // this.trigger(Event.WEBSOCKET_RECONNECTION);
+
+      // 这里是直接时间间隔刷新
+      // this.destroy()
+      // let wfsVideo = new Wfs({ debug: true })
+      // wfsVideo.attachMedia(this.media, this.websocketUrl, this.copterId)
+      // return wfsVideo
+
+      // this.destroy();
+      // setTimeout(()=>{
+      //   this.flowController = new FlowController(this);
+      //   this.bufferController = new BufferController(this);
+      //   this.websocketLoader = new WebsocketLoader(this);
+      //   this.trigger(Event.MEDIA_ATTACHING, {media:this.media, channelName:this.copterId, mediaType:this.mediaType, websocketName:this.websocketName });
+      // })
     }
   }]);
 

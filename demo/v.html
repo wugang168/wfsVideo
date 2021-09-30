@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8"/>
+    <style>
+      * {
+        padding: 0;
+        margin: 0;
+      }
+      .wrap {
+        width: 600px;
+        height: 500px;
+        margin: 0 auto;
+        border: 1px solid red
+      }
+    </style>
+  </head>
+  <body>
+    <video controls></video>
+    <div id="wrap" class="wrap">
+
+    </div>
+    <script>
+      // var video = document.querySelector('video');
+
+
+      var video = document.createElement("video");
+      var wrap  = document.getElementById('wrap')
+      wrap.appendChild(video)
+      var assetURL = 'http://nickdesaulniers.github.io/netfix/demo/frag_bunny.mp4';
+      // Need to be specific for Blink regarding codecs
+      // ./mp4info frag_bunny.mp4 | grep Codec
+      var mimeCodec = 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"';
+
+      var mediaSource = new MediaSource;
+        //console.log(mediaSource.readyState); // closed
+      video.src = URL.createObjectURL(mediaSource);
+      video.autoplay = true
+      video.muted = true
+      
+      mediaSource.addEventListener('sourceopen', sourceOpen);
+
+      function sourceOpen (_) {
+        //console.log(this.readyState); // open
+        var mediaSource = this;
+        var sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+
+
+        fetchAB(assetURL, function (buf) {
+          sourceBuffer.addEventListener('updateend', function (_) {
+            console.log("999999")
+            // mediaSource.endOfStream();
+            video.play();
+            //console.log(mediaSource.readyState); // ended
+            setTimeout(()=>{
+              console.log("准备重新加载一个数据进去")
+              var v = document.createElement("video");
+              wrap.appendChild(v)
+              var mediaSource2 = new MediaSource;
+              var sourceBuffer2 = mediaSource2.addSourceBuffer(mimeCodec);
+              v.src =  URL.createObjectURL(sourceBuffer2);
+              v.autoplay = true
+              v.muted = true
+              v.play()
+            }, 7000)
+          });
+          sourceBuffer.appendBuffer(buf);
+        });
+      };
+
+      function fetchAB (url, cb) {
+        console.log(url);
+        var xhr = new XMLHttpRequest;
+        xhr.open('get', url);
+        xhr.responseType = 'arraybuffer';
+        xhr.onload = function () {
+          cb(xhr.response);
+        };
+        xhr.send();
+      };
+    </script>
+  </body>
+</html>
